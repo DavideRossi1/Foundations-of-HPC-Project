@@ -1,0 +1,11 @@
+prefix=/u/dssc/drossi00/Foundations_of_HPC_2022/Assignment/myassign/myblis
+exec_prefix=/u/dssc/drossi00/Foundations_of_HPC_2022/Assignment/myassign/myblis
+libdir=/u/dssc/drossi00/Foundations_of_HPC_2022/Assignment/myassign/myblis/lib
+includedir=/u/dssc/drossi00/Foundations_of_HPC_2022/Assignment/myassign/myblis/include
+
+Name: BLIS
+Description: BLAS-like Library Instantiation Software Framework
+Version: 0.9.0-91
+Libs: -L${libdir} -lblis
+Libs.private:  -lm -lpthread -fopenmp -lrt
+Cflags: -I${includedir}/blis
