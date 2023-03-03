@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=EPYC
-#SBATCH --job-name=str-sp-mkl-cl
+#SBATCH --job-name=p1-dp-mkl-cl
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=64
 #SBATCH --exclusive
@@ -15,7 +15,7 @@ export OMP_NUM_THREADS=64
 
 for size in {2000..20000..1000}
 do
-        for i in {1..10}
-                do ./gemm_mkl_sp.x $size $size $size | grep GFLOPS >> strong-sp-mkl-cl.dat
+  	for i in {1..10}
+                do ./gemm_mkl.x $size $size $size | grep GFLOPS >> strong-dp-mkl-cl.dat
         done
 done
