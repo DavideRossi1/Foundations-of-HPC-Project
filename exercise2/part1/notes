@@ -1,0 +1,5 @@
+The calculation to be done for the peak performance of the processor are:
+
+- 64 cores times 2.6 GHz times 32 flops/s = 5.32x10^12 flops = 5.32 Tflops for single precision
+
+- 64 cores times 2.6 GHz times 16 flops/s = 2.66x10^12 flops = 2.66 Tflops for double precision
