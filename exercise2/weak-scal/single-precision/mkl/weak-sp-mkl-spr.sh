@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=EPYC
-#SBATCH --job-name=ex2-epyc-sp
+#SBATCH --job-name=wk-sp-mkl-spr
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --time=02:00:00

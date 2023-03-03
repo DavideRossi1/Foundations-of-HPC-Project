@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=EPYC
-#SBATCH --job-name=ex2-epyc-sp
+#SBATCH --job-name=wk-sp-oblas-spr
 #SBATCH --nodes=1
 #SBATCH --nodelist=epyc[007]
 #SBATCH --exclusive
