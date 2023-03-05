@@ -16,6 +16,6 @@ export OMP_NUM_THREADS=64
 for size in {2000..20000..1000}
 do
         for i in {1..10}
-                do ./gemm_mkl_sp.x $size $size $size | grep GFLOPS >> strong-sp-mkl-spr.dat
+                do ./gemm_mkl_sp.x $size $size $size | grep GFLOPS >> p1-sp-mkl-spr.dat
         done
 done

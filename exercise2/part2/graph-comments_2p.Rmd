@@ -1,0 +1,70 @@
+---
+title: "Graphics comments part 2"
+output: html_document
+date: "2023-03-04"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+# CORE SCALING
+
+```{r}
+library(ggplot2)
+data <- read.table("dat/HPC-DATA-5.dat", quote="\"", comment.char="")
+
+colnames(data) <- c("N_CORES", "PRECISION", "POLICY", "TIME", "GFLOPS", "SPEEDUP", "EFFICIENCY", "LIBRARY", "SYNTH")
+data$LIBRARY <- as.factor(data$LIBRARY)
+```
+
+## Single precision
+
+```{r}
+subset01 <- data[c(65:128, 321:384),]
+plot01 <- ggplot(subset01, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
+plot01 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + SPREAD allocation policy") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+subset02 <- data[c(1:64, 257:320),]
+plot02 <- ggplot(subset02, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
+plot02 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + CLOSE allocation policy") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+
+```
+
+In this second case, we kept the matrix size fixed (12000 x 12000) and we tried to scale over the number of cores (from 1 to 64). Also in this case we used `OMP_PLACES=cores` and we repeated each trial for 10 times and we took a mean of the results. As we can see, also in this case MKL and OpenBlas seem to behave differently, but we can appreciate the greatest difference for a high number of cores (about 20 or more): in fact, while until about 20 cores the speedup (defined as $\frac{T(1)}{T(n)}$) is almost perfect for both the libraries, for greater number of cores OpenBlas seems to be outperformed by MKL, the latter being able to maintain a good scalability until about 30 cores. This behaviour is quite similar both in SPREAD and in CLOSE policy, although the latter seems to scale slightly better for both the libraries, having a highest speedup for almost all the cases.
+
+## Double precision
+
+```{r}
+subset04 <- data[c(193:256, 449:512),]
+plot04 <- ggplot(subset04, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
+plot04 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Double Precision + SPREAD allocation policy") +
+xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+subset05 <- data[c(129:192, 385:448),]
+plot05 <- ggplot(subset05, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
+plot05 + geom_abline(slope=1,intercept=0)+ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Double Precision + CLOSE allocation policy") +
+xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+```
+
+If in single precision MKL seemed to outperform OpenBlas, in double precision we have a opposite situation: scalability is nearly perfect for both libraries untile about 15 cores, but while MKL stops there, maintaining a more or less constant speedup both with SPREAD and with CLOSE policy, OpenBlas clearly outperforms the other library, maintaining a still very good speedup until 25 cores, particularly with the CLOSE policy where the difference is marked. 
+
+## Conclusions
+
+```{r}
+subset06 <- data[c(1:256),]
+plot06 <- ggplot(subset06, aes(x=N_CORES,y=SPEEDUP, color=SYNTH)) + geom_line() + geom_point()
+plot06 + geom_abline(slope=1,intercept=0) + ggtitle("OpenBLAS comparisons: different precisions and allocation policies") +
+  xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+
+subset07 <- data[c(257:512),]
+plot07 <- ggplot(subset07, aes(x=N_CORES,y=SPEEDUP, color=SYNTH)) + geom_line() + geom_point()
+plot07 + geom_abline(slope=1,intercept=0) + ggtitle("MKL comparisons: different precisions and allocation policies") +
+xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+```
+
+Summarizing, OpenBlas and MKL seem to behave very differently: while in the first case the binding policy seems to influence a lot the scalability, with CLOSE policy being more appropriate in general, with MKL this behaviour doesn't seem to play a decisive role (although CLOSE policy still seems to be slightly better in the single precision case).
