@@ -8,9 +8,19 @@ date: '2023-03-03'
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+# INTRODUCTION
+
+The aim of this exercise is to test whether and how different some math libraries manage to scale a matrix-matrix multiplication problem. 
+The first request was to test how performances scale when we fix the number of processors used in the computation and we scale the size of the problem. 
+The second request consisted in testing how performance scale when we fix the problem size and we scale the number of processors.
+
 # SIZE SCALING
 
-In this first case, we kept the number of cores fixed (64 since we did the test in the EPYC nodes) and we tried to scale over the matrix size (going from $2000\times2000$ to $20000\times20000$ with step $1000$). We set `OMP_PLACES=cores` and we repeated each trial for 10 times and we took a mean of the results.
+In this first case, we kept the number of cores fixed (it was requested to use only 64 cores if choose a EPYC node) and we tried to scale over the matrix size. It was asked to consider different matrices sizes, going from $2000\times2000$ to $20000\times20000$ with a certain step, that we fixed at $1000$.
+We chose to use square matrices of the same sizes: if the first matrix has $2000\times2000$ elements, then even the second one will have $2000\times2000$ elements.  
+
+We set `OMP_PLACES=cores` and we repeated each trial for 10 times in order to take the mean of the results for each matrix size.
+
 
 ## A first binding policy attempt: SPREAD
 
@@ -18,8 +28,8 @@ In this first case, we kept the number of cores fixed (64 since we did the test 
 
 ```{r, echo=F, message=F}
 library(ggplot2)
-data <- read.delim2("dat/DATA-HPC.dat")
-data_NONE <- read.table("dat/HPC_DATA_PART1.dat", quote="\"", comment.char="")
+data <- read.delim2("DATA-HPC.dat")
+data_NONE <- read.table("HPC_DATA_PART1.dat", quote="\"", comment.char="")
 colnames(data_NONE) <- c("DIM", "TIME", "GFLOPS", "PRECISION", "POLICY", "SYNTH", "LIBRARY")
 data_NONE <- rbind(data[-4], data_NONE[-2])
 ```
@@ -32,12 +42,12 @@ plot01 + ggtitle("Comparison OpenBLAS and MKL on EPYC + Single Precision + SPREA
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
 ```
 
-On an EPYC node, SPREAD policy in single precision shows different trends with respect to the considered library.
-MKL seems to perform better with small matrix sizes: it has a peak in correspondence to $size=7.000$, with $2.600\;GFLOPS$. After that, MKL performances decrease and change only in correspondence to $size=18.000$, where we observe less than $1.700\;GFLOPS$.
-On the other hand, for OpenBLAS the number of $GFLOPS$ grows accordingly with the matrix size. 
+On an EPYC node, `spread` policy in single precision shows different trends with respect to the considered library.
+MKL seems to perform better with small matrix sizes: it has a peak in correspondence to $size=7.000$, with $2.600\;GFLOPS$. After that peak, MKL performances decrease and they improve only in correspondence to $size=18.000$, though we observe less than $1.700\;GFLOPS$.
+On the other hand, for OpenBLAS the number of $GFLOPS$ grows almost accordingly with the matrix size: it is possible to observe it decrease only after matrices of $size=18.000$. 
 
 At a size of $12.000$, both OpenBLAS and MKL seem to perform equivalently. 
-Another thing that is in common between these 2 trends is that we observe a growth in terms of $GFLOPS$ both for OpenBLAS and MKL for matrix sizes equal to $18.000$.
+Another thing that is in common between these 2 trends is that we observe a sudden growth in terms of $GFLOPS$ both for OpenBLAS and MKL for matrix sizes equal to $18.000$, even though both decrease for matrices of $size=19.000$.
 
 
 
@@ -51,11 +61,10 @@ plot02 + ggtitle("Comparison OpenBLAS and MKL on EPYC + Double Precision + SPREA
 ```
 
 If we now consider a double precision matrix representation, we can spot many differences. 
-First of all, the overall maximum in terms of $GFLOPS$ ($1.100$) is less than an half the overall maximum that we can observe if we use a SPREAD policy allocation ($2.600$). 
-Then, it's easy to see that MKL still shows 2 peaks, but they can be found in correspondence to different matrix sizes than before. In double precision, both OpenBLAS and MKL show almost the same trend, and MKL is, almost always, the more performant. 
-The peak performance can be observed by using OpenBLAS. 
+First of all, the overall maximum in terms of $GFLOPS$ ($1.100$) is less than an half the overall maximum that we can observe if we use a `spread` policy allocation ($2.600$). 
+Then, it's easy to see that MKL shows 2 peaks exactly as seen in the single precision case, but this time they can be found in correspondence to different matrix sizes. In double precision, both OpenBLAS and MKL show almost the same trend, and MKL is, almost always, the more performant. On the other hand, the peak performance in this problem setting can be observed by using OpenBLAS. 
 
-To sum up, what emerges from these two analysis is that the expression of matrix elements in double precision almost halves the performance (i.e. the number of $GFLOPS$) that we can reach. If we manage to use single precision numbers, we can state that if matrix size is below $12.000$ it's more convenient to use MKL in order to have higher performances; otherwise, OpenBLAS would be the best option (at least until a matrix size of $20.000$). 
+To sum up, what emerges from these two analysis is that the expression of matrix elements in double precision almost halves the performance (i.e. the number of $GFLOPS$) that we can reach. If we manage to use single precision numbers, we can state that if matrix size is below $12.000$ it's more convenient to use MKL in order to achieve higher performances; otherwise, OpenBLAS would be the best option (at least until a matrix size of $20.000$). 
 
 
 
@@ -63,7 +72,7 @@ To sum up, what emerges from these two analysis is that the expression of matrix
 
 ### Single precision
 
-In a SPREAD allocation policy -the one that we saw before- work is distributed with a round-robin order on cores in different sockets: this means that we can exploit a L3 cache capacity which is the double of the one that we have with a CLOSE allocation policy. 
+In a `spread` allocation policy -the one that we saw before- work is distributed with a round-robin order on cores in different sockets: this means that we can exploit a L3 cache capacity (which is the double of the one that we have with a `close` allocation policy). 
 
 ```{r, echo=FALSE}
 subset03 <- data[c(77:95, 115:133),]
@@ -72,9 +81,9 @@ plot03 + ggtitle("Comparison OpenBLAS and MKL on EPYC + Single Precision + CLOSE
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
 ```
 
-This graph highlights that now MKL is better/slightly better than OpenBLAS only for matrices of sizes between $3.000$ and $\sim 6.500$; for all other matrix sizes, OpenBLAS apparently outperforms MKL. 
-Despite this, the maximum observed value of $GFLOPS$ is $2.400$, while for a SPREAD policy allocation it was greater. What changes in this situation is that now the OpenBLAS performance trend seems to grow accordingly to the matrix size (which is really good), while before we had only a high value for relatively small matrices. 
-Up to what we can observe, CLOSE appears to be a more reasonable allocation policy accordingly to its ability to better scale if we increase the matrix size. 
+This graph highlights that now MKL is better/slightly better than OpenBLAS for matrices of sizes between $3.000$ and $\sim 6.500$; for all other matrix sizes, OpenBLAS apparently outperforms MKL. 
+Despite this, the maximum observed value of $GFLOPS$ is $2.400$, while for a `spread` policy allocation it was greater ($2.600$). What changes in this allocation policy is that now the OpenBLAS performance trend seems to grow accordingly to the matrix size (which is really good), while before we had only a high value for matrices of size under $18.000$. 
+Up to what we can observe, `close` appears to be a more appropriate allocation policy accordingly to its ability to better scale if we increase the matrix size. 
 
 ## Double precision
 
@@ -85,7 +94,7 @@ plot04 + ggtitle("Comparison OpenBLAS and MKL on EPYC + Double Precision + CLOSE
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
 ```
 
-Here again we observe a decrease in the performances, but this time it happens for smaller matrix sizes: it seems to happen for matrices of $3.000$ and $4.000$ elements.
+Here again we observe an initial decrease in the performances, but this time it happens for smaller matrix sizes (matrices of $3.000$ for MKL and $4.000$ for OpenBLAS).
 
 ### Comparison with the peak performance of the processor
 
@@ -100,9 +109,11 @@ This means that:
   
 $$
   P_{peak}^{SP} = 64 \cdot 2,6\;Gz \cdot 32\;\frac{FLOPS}{cycle} = 5324,8\;GFLOPS
-\qquad P_{peak}^{DP} = 64 \cdot 2,6\;Gz \cdot 16\;\frac{FLOPS}{cycle} = 2662,4\;GFLOPS
 $$
-  
+$$
+P_{peak}^{DP} = 64 \cdot 2,6\;Gz \cdot 16\;\frac{FLOPS}{cycle} = 2662,4\;GFLOPS
+$$
+
   if we compare these peak performances with the maximum ones that we have obtained, we can see that:
   
   |PRECISION|LIBRARY|empirical peak|% of theoretical| 
@@ -114,11 +125,16 @@ $$
 
 ### Intepretation of the results and conclusions  
 
-In the first case we analyzed, single precision with SPREAD policy, we noticed that MKL had a huge decrease in performance for matrices with size greater than $7000$. This is easily explainable considering the cache size: total cache size in a EPYC node is $584$ MiB, that is $612.368.384$ B. The maximum size such that 3 matrices with float entries can fit in that value, with a bit of computations, is about $7100$, so we can deduct that from that value on MKL needed to access the RAM in order to store the matrices entries, thus lowering the performances. OpenBLAS didn't suffer this problem, hence we can suppose it did a different usage of memory, probably accessing directly to RAM (poor performance for small matrices could suggest this behaviour). \
+In the first case we analyzed (i.e. single precision with `spread` policy) we noticed that MKL had a huge decrease in performance for matrices with size greater than $7.000$. This is easily explainable considering the cache size: total cache size in a EPYC node is $584\;MiB$ ($512\;MiB$ of L3, ), that is equivalent to $612.368.384\;Bytes$. \
+The maximum size such that $3$ matrices with `float` entries can fit in that value is about $7.100$. We can deduct that from that value on, MKL needed to access the RAM in order to store the matrices entries, thus lowering the performances. 
+Since OpenBLAS didn't seem to suffer this problem from the tests that we did, we can suppose that it did a better usage of memory.
+*CONTROLLA PRIMA DI INSERIRLA: we can suppose that it did a different usage of memory, probably accessing directly to RAM (poor performance for small matrices could suggest this behaviour).* \
 
-When shifting to double precision, we observed a similar behaviour, but with different values: with the same calculations as before we can find that the maximum size such that 3 matrices with double entries can fit the cache is about $5000$, hence we expect from MKL the same behaviour as before, behaviour confirmed by data. 
+When shifting to double precision (still using `spread` allocation policy), we observed a similar behavior but with different values: with the same calculations as before we can find that the maximum size such that $3$ matrices with `double` entries can fit the cache is about $5.000$, hence we expect from MKL the same behaviour as before. This is confirmed by data (we refer to the second graph). \
 
-By changing binding policy we noticed the same behaviour from MKL, but this time it is shared also by OpenBLAS: both have a decrease in performance after $size=5000$ (for single precision) and $size=3000$ (for double precision), but the latter seems to recover better, having a better scaling than the former for all the values and a increasing trend (while MKL seems to stay almost constant). 
+
+By changing binding policy and shifting to `close`, we noticed the same behaviour as before from MKL. This time that behaviour is also shared by OpenBLAS: both libraries have a decrease in performance for sizes larger than $5.000$ for single precision and $3.000$ for double precision (third and fourth graph). 
+What distinguishes the two trends is that OpenBLAS seems to recover better, showing a better scaling than the former for all the values on, also having an increasing trend (while MKL seems to stay almost constant). 
 
 
 ```{r, echo=FALSE}
@@ -138,10 +154,9 @@ plot07 + ggtitle("MKL in single precision comparisons: different allocation poli
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
 ```
 
-From what we can observe, OpenBLAS manages the memory in a totally different way with respect to MKL in single precision. In fact, while the former has clearly better performances with the CLOSE policy than with the SPREAD one, for the latter this is not so clear: if for medium size matrices (from $\approx5000$ to $\approx11000$) the SPREAD policy seems to be the best choice, for smaller and bigger matrices it has a trend similar, and also slightly worse in some cases, to the other policies.
+From what we can observe, OpenBLAS manages the memory in a totally different way with respect to MKL in single precision. In fact, while the former has clearly better performances with the `close` policy than with the `spread` one, for the latter this is not so clear: if for medium size matrices (from $\approx5.000$ to $\approx11.000$) the `spread` policy seems to be the best choice, for smaller and bigger matrices it has a trend similar -and also slightly worse in some cases- to the other policies.
 
-**cosa intendevi qui?**
-This is due to the fact that when we asked for 64 cores in a EPYC node with a CLOSE policy, they will all be placed in the same CCX region (**socket??**), that shares the same L3 cache. If we go for SPREAD policy instead, cores will be round-robin chosen across different CCXs in the same NUMA region, so twice of L3 cache is available. 
+*When we asked for 64 cores in a EPYC node with a `close` policy, we were asking the OS to place them in the same socket before considering other sockets' cores. If we go for `spread` policy instead, cores will be round-robin chosen across different cores in the socket. Since in an EPYC node we can found 2 sockets, twice of L3 cache will be available. This will help libraries with worse memory management.*
 
 
 ```{r,echo=FALSE}
@@ -150,7 +165,6 @@ subset06 <- data_NONE[c(20:38, 96:114, 172:190, 248:266),]
 plot06 <- ggplot(subset06, aes(x=DIM,y=GFLOPS, color=SYNTH)) + geom_line() + geom_point()
 plot06 + ggtitle("OpenBLAS in double precision comparisons: different allocation policies") +
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
-
 ```
 
 ```{r,echo=FALSE}
@@ -159,15 +173,13 @@ subset08 <- data_NONE[c(58:76, 134:152, 210:228, 286:304),]
 plot08 <- ggplot(subset08, aes(x=DIM,y=GFLOPS, color=SYNTH)) + geom_line() + geom_point()
 plot08 + ggtitle("MKL in double precision comparisons: different allocation policies") +
   xlab("Matrix Size") + ylab("GFLOPS") + scale_y_continuous(breaks=seq(0,3000,200)) + scale_x_continuous(breaks=seq(0,20000,2000))
-
 ```
 
-Switching to double precision, OpenBLAS seems to keep a trend similar to the other case, with CLOSE policy being better than SPREAD, even if the difference is less marked in this case, especially for bigger matrices. On the contrary, MKL seems to perform the best with the SPREAD policy in a much clearer way than in the single precision case.
+Switching to double precision, OpenBLAS seems to keep a trend similar to the previous case (`close` policy seems to be better than `spread`), even if the difference is less marked in this case, especially for relatively big matrices (from $size=15.000$ on). On the contrary, MKL seems to perform best with the `spread` policy in a much evident way than in the single precision case. \
 
-A final note: we also tried the NONE policy, on its two declinations FALSE and TRUE. As a result, we obtained that if we let the OS migrate the threads with the FALSE policy, this will result in a much worse usage of memory and, consequently, worse performance (on average, worse than any other policy). If, on the contrary, we forbid the OS to migrate the threads, the result is, as we can see in the previous graphs, a scaling that is basically equal to the CLOSE policy, both in single and in double precision for both the libraries.
 
-**Non so se abbia senso tenere questo**
-The first, obvious consideration that we can make is that the choice of using single or double precision numbers to express matrices elements is determinant in terms of achieved performances: by using single precision both for OpenBLAS and MKL we can observe more than $2$ times the performances than we could have in double precision. This factor increases even to $3$ or more in some small (i.e. under $8.000$) matrices cases.
+A final note: we also tried the `none` policy, on its two declinations: `false` and `true`. As a result, we obtained that if we let the OS migrate the threads by using the `false` policy, *this will result in a much worse usage of memory (serve spiegare perché)* and, consequently, worse performance (on average, they are worse than any other policy). If, on the contrary, we forbid the OS to migrate the threads, the result is (as we can see in the graphs above) a scaling that is basically equal to the `close` policy, both in single and in double precision for both the libraries.
+
 
 
 # CORE SCALING
@@ -176,8 +188,7 @@ In this second case, we kept the matrix size fixed (12000 x 12000) and we tried 
 
 ```{r}
 library(ggplot2)
-data <- read.table("dat/HPC-DATA-5.dat", quote="\"", comment.char="")
-
+data <- read.table("HPC-DATA-5.dat", quote="\"", comment.char="")
 colnames(data) <- c("N_CORES", "PRECISION", "POLICY", "TIME", "GFLOPS", "SPEEDUP", "EFFICIENCY", "LIBRARY", "SYNTH")
 data$LIBRARY <- as.factor(data$LIBRARY)
 ```
@@ -187,17 +198,18 @@ data$LIBRARY <- as.factor(data$LIBRARY)
 ```{r}
 subset01 <- data[c(65:128, 321:384),]
 plot01 <- ggplot(subset01, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
-plot01 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + SPREAD allocation policy") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+plot01 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + SPREAD") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,2)) + theme(axis.text.x = element_text(angle = 90))
 ```
 
 ```{r}
 subset02 <- data[c(1:64, 257:320),]
 plot02 <- ggplot(subset02, aes(x=N_CORES,y=SPEEDUP, color=LIBRARY)) + geom_line() + geom_point()
-plot02 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + CLOSE allocation policy") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
-
+plot02 + geom_abline(slope=1,intercept=0) + ggtitle("Speedup comparison OpenBLAS and MKL on EPYC + Single Precision + CLOSE") + xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,2)) + theme(axis.text.x = element_text(angle = 90))
 ```
 
-As we can see, also in this case MKL and OpenBLAS seem to behave differently, but we can appreciate the greatest difference for a high number of cores (about 20 or more): in fact, while until about 20 cores the speedup (defined as $\frac{T(1)}{T(n)}$) is almost perfect for both the libraries, for greater number of cores OpenBLAS seems to be outperformed by MKL, the latter being able to maintain a good scalability until about 30 cores. This behaviour is quite similar both in SPREAD and in CLOSE policy, although the latter seems to scale slightly better for both the libraries, having a highest speedup for almost all the cases.
+As we can see, also in this case MKL and OpenBLAS seem to behave differently, but we can appreciate a substantial difference for $20$ cores on. 
+In fact, while until about $20$ cores the speedup (defined as $\frac{T(1)}{T(n)}$) is almost perfect (i.e. coincident to the ideal one) for both the libraries, for greater number of cores OpenBLAS seems to be outperformed by MKL. This is able to maintain a quite good scalability until about $30$ cores. 
+This behavior is quite similar both for `spread` and in `close` policies, although the latter seems to achieve a slightly better scaling for both libraries, having a highest speedup for almost all the number of cores.
 
 ## Double precision
 
@@ -215,7 +227,7 @@ plot05 + geom_abline(slope=1,intercept=0)+ggtitle("Speedup comparison OpenBLAS a
 xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,200,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
 ```
 
-If in single precision MKL seemed to outperform OpenBLAS, in double precision we have a opposite situation: scalability is nearly perfect for both libraries until about 15 cores, but while MKL stops there, maintaining a more or less constant speedup both with SPREAD and with CLOSE policy, OpenBLAS clearly outperforms the other library, maintaining a still very good speedup until 25 cores, particularly with the CLOSE policy where the difference is marked. 
+If in single precision MKL seemed to outperform OpenBLAS, in double precision we have a opposite situation: scalability is nearly perfect for both libraries until about $15$ cores, but while MKL gets worse from that point on (it maintains a more or less constant speedup both with `spread` and with `close` policies), OpenBLAS clearly outperforms the other library, maintaining a still very good speedup until $25$ cores, particularly with the `close` policy for which the difference is marked. 
 
 ## Conclusions
 
@@ -223,18 +235,12 @@ If in single precision MKL seemed to outperform OpenBLAS, in double precision we
 subset06 <- data[c(1:256),]
 plot06 <- ggplot(subset06, aes(x=N_CORES,y=SPEEDUP, color=SYNTH)) + geom_line() + geom_point()
 plot06 + geom_abline(slope=1,intercept=0) + ggtitle("OpenBLAS comparisons: different precisions and allocation policies") +
-  xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
-
+  xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,2)) + theme(axis.text.x = element_text(angle = 90))
 subset07 <- data[c(257:512),]
 plot07 <- ggplot(subset07, aes(x=N_CORES,y=SPEEDUP, color=SYNTH)) + geom_line() + geom_point()
 plot07 + geom_abline(slope=1,intercept=0) + ggtitle("MKL comparisons: different precisions and allocation policies") +
-xlab("Number of Cores") + ylab("SPEEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,1)) + theme(axis.text.x = element_text(angle = 90))
+xlab("Number of Cores") + ylab("SP
+EEDUP") + scale_y_continuous(breaks=seq(0,40,1)) + scale_x_continuous(breaks=seq(0,64,2)) + theme(axis.text.x = element_text(angle = 90))
 ```
 
-Summarizing, OpenBLAS and MKL seem to behave very differently: while in the first case the binding policy seems to influence a lot the scalability, with CLOSE policy being more appropriate in general, with MKL this behaviour doesn't seem to play a decisive role (although CLOSE policy still seems to be better in the single precision case).
-
-
-
-
-
-
+Summarizing, OpenBLAS and MKL seem to behave very differently: while if we use OpenBLAS the binding policy seems to influence a lot the scalability (`close` policy seems to be more appropriate in general), with MKL this behavior doesn't seem to play a decisive role (although `close` policy still seems to be better in the single precision case).
