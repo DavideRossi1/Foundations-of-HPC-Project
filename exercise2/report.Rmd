@@ -28,8 +28,10 @@ We set `OMP_PLACES=cores` and we repeated each trial for 10 times in order to ta
 
 ```{r, echo=F, message=F}
 library(ggplot2)
-data <- read.delim2("DATA-HPC.dat")
-data_NONE <- read.table("HPC_DATA_PART1.dat", quote="\"", comment.char="")
+setwd("/home/davide/Desktop/Foundations_of_HPC_2022/Assignment/Foundations-of-HPC-Project/exercise2")
+#setwd("/u/dssc/drossi00/Foundations-of-HPC-Project/exercise2")
+data <- read.delim2("data/DATA-HPC.dat")
+data_NONE <- read.table("data/HPC_DATA_PART1.dat", quote="\"", comment.char="")
 colnames(data_NONE) <- c("DIM", "TIME", "GFLOPS", "PRECISION", "POLICY", "SYNTH", "LIBRARY")
 data_NONE <- rbind(data[-4], data_NONE[-2])
 ```
