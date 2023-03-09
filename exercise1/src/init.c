@@ -16,6 +16,5 @@ void initialize(char* filename, long N){
         //matrix[i]=0; debugging
     }
     write_pgm_image(matrix, MAXVAL, N, N, filename);
-    printf("\n");
     free(matrix);
 }

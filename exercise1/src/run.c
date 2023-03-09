@@ -13,20 +13,23 @@ void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize,
 unsigned char checksingle(unsigned char *matrix,  int i, int N){
     int left=N*(i%N==0);
     int right=N*((i+1)%N==0);
-    int updown=N*N;
+    unsigned int square=N*N;
+    int up=square*((i-N)<0);
+    int down=square*((i+N)>=square);
     unsigned char status=(
-             matrix[i-1+left]  // west el
-            +matrix[i+1-right] // east el
-            +matrix[(i-N)%updown] // north el
-            +matrix[(i+N)%updown] // south el
-            +matrix[(i-1-N+left)%updown] // nort-west el
-            +matrix[(i+1-N-right)%updown] // north-east el
-            +matrix[(i-1+N+left)%updown] // south-west el
-            +matrix[(i+1+N-right)%updown] // south-east el
-            )/255; //pay attention with module, actually it is a remainder operation hence it can assume also
-                    // negative values. The integer division mitigates a bit the problem but it's still there!
+             matrix[i-1 + left]  // west el
+            +matrix[i+1 - right] // east el
+            +matrix[i-N + up] //north el
+            +matrix[i+N - down] // south el
+            +matrix[i-1-N + left + up] // nort-west el
+            +matrix[i+1-N - right + up] // north-east el
+            +matrix[i-1+N + left - down] // south-west el
+            +matrix[i+1+N - right - down] // south-east el
+            )/255; // note: all the elements need a correction to account for the fact that we want a 
+            // "pacman effect": left and right apply a correction on the elements of the first and last 
+            // column, up and down apply a correction on the elements of the first and last row
     return ((status==2 || status==3)? MAXVAL: 0 );
-}
+ }
 
 void updatematr(unsigned char *matrix,unsigned char *newmatrix,int N){
     for(int i=0;i<N*N;i++){
@@ -39,6 +42,7 @@ void run_static(char* filename, int steps, int dump, int N){
     int maxval=MAXVAL;
     read_pgm_image(&matrix, &maxval, &N, &N,filename);
     unsigned char* tempmatr=(unsigned char*)malloc(N*N*sizeof(unsigned char));
+    
     for (int i=0;i<steps;i++){
         if((i%2)==0){
             updatematr(matrix, tempmatr, N); 
@@ -52,10 +56,13 @@ void run_static(char* filename, int steps, int dump, int N){
             free(filename);
         }  
     }
-    
- 
-
-    
+    if (dump>steps) {
+        char * filename = (char*)malloc(N*N*sizeof(unsigned char));
+        sprintf(filename, "snap/snapshotstat_%03d",steps);
+        write_pgm_image(matrix, MAXVAL, N, N, filename);
+        free(filename);
+    }
+    free(tempmatr);    
 }
 
 void run_order(char* filename, int steps, int dump, int N){
@@ -65,19 +72,18 @@ void run_order(char* filename, int steps, int dump, int N){
     for (int i=0;i<steps;i++){
         for(int i=0;i<N*N;i++){
             matrix[i] = checksingle(matrix,i,N);
-    }
-    if (dump!=0) {
-            if (dump!=0 & i%dump==0) {
-                char * filename = (char*)malloc(N*N*sizeof(unsigned char));
-                sprintf(filename, "snap/snapshotord_%03d",i);
-                write_pgm_image(matrix, MAXVAL, N, N, filename);
-                free(filename);
-            }else if(dump==0 & i==steps-1){
-                char * filename = (char*)malloc(N*N*sizeof(unsigned char));
-                sprintf(filename, "snap/snapshotord_%d",i);
-                write_pgm_image(matrix, MAXVAL, N, N, filename);
-                free(filename);
-            }
         }
+        if (i%dump==0) {
+            char * filename = (char*)malloc(N*N*sizeof(unsigned char));
+            sprintf(filename, "snap/snapshotord_%03d",i);
+            write_pgm_image(matrix, MAXVAL, N, N, filename);
+            free(filename);
+        }
+    }
+    if (dump>steps) {
+        char * filename = (char*)malloc(N*N*sizeof(unsigned char));
+        sprintf(filename, "snap/snapshotord_%03d",steps);
+        write_pgm_image(matrix, MAXVAL, N, N, filename);
+        free(filename);
     }
 }

@@ -1,21 +1,19 @@
-CC=gcc -g
+CC=gcc
 
 INCDIR=include
 OBJDIR=obj
 
-RW=$(OBJDIR)/my_write_pgm.o 
-INIT=$(OBJDIR)/my_init.o 
-STAT=$(OBJDIR)/run_stat.o 
-#IT_WAVE=$(OBJDIR)/iterate_wave.o
-#IT_ORDERED=$(OBJDIR)/iterate_ordered.o
-OBJECTS=mymain.o $(RW) $(INIT) $(STAT)
+RW=$(OBJDIR)/read-write_pgm.o 
+INIT=$(OBJDIR)/init.o 
+RUN=$(OBJDIR)/run.o 
+OBJECTS=main.o $(RW) $(INIT) $(RUN)
 
-mymain.x: $(OBJECTS)
-	mkdir -p output
+main.x: $(OBJECTS)
+#	mkdir -p output
 	mkdir -p snap
 	$(CC) $(OBJECTS) -o $@
-mymain.o: mymain.c
-	$(CC) -c mymain.c
+main.o: main.c
+	$(CC) -c main.c
 obj/%.o: src/%.c
 	mkdir -p obj
 	$(CC) -c $^ -o $@

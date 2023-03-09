@@ -14,8 +14,6 @@ void run_static(char* filename, long steps, long dump, long N);
 void run_order(char* filename, int steps, int dump, int N);
 
 
-//size of the playground
-#define SIZE 30
 
 #define MAXVAL 255
 //initialize the playground
@@ -32,22 +30,9 @@ void run_order(char* filename, int steps, int dump, int N);
 #define ORDERED 0
 #define STATIC  1
 
-
-int   action = 0;
-int   N      = N_DFLT;
-int   e      = ORDERED;
-
-//number of steps to be calculated
-int   n      = N_ITER;
-
-//every how many steps a dump of the system is saved on a file
-int   s      = DUMP_DFLT;
-
-
-
-//#####################################
-// first attempt
-/* void init(unsigned char *matrix){
+/*
+########################### first attempt ##################
+ void init(unsigned char *matrix){
 
     for(int i=0;i<N*N;i++){
         int val=rand()%100;
@@ -59,12 +44,11 @@ int   s      = DUMP_DFLT;
     printf("\n");
     //free(matrix);
 }
- */
+ 
 
 
-//####################################
-//just debugging 
-/* void printmatrix(unsigned char* matrix){
+######################## just debugging ###################
+ void printmatrix(unsigned char* matrix){
     for (int i=0;i<N;i++){
         for (int j=0;j<N;j++){
             printf("%d ",matrix[i*N+j]);
@@ -72,12 +56,11 @@ int   s      = DUMP_DFLT;
         printf("\n");
     }
     printf("\n");
-} */
-//#####################################
+} 
+#####################################
 
- //#######################################
- // First trials: they work, need to add the read
-/* void update(unsigned char *matrix, int rep){
+####################### First trials: they work, need to add the read ####################
+ void update(unsigned char *matrix, int rep){
     unsigned char* newmatr=(unsigned char*)malloc(N*N*sizeof(unsigned char));
     for(int i=0;i<N*N;i++){
         newmatr[i] = checkstatus(matrix,i);
@@ -98,16 +81,15 @@ void update_order(unsigned char *matrix){
     write_pgm_image(matrix, MAXVAL, N, N, filename2);
 
     printf("\n");
-} */
-//#############################################
+}
+#############################################
 
-/* 
+
 void run_order(char* filename, int steps, int dump){
 
 }
 
- */
-/* 
+############ OLD MAIN ####################
 int main(int argc, char **argv){
 
     int action = 0;
@@ -141,9 +123,16 @@ int main(int argc, char **argv){
 */
 int main(int argc, char * argv[]){
 
+    int   action = 0;
+    int   N      = N_DFLT;
+
+    //number of steps to be calculated
+    int   n      = N_ITER;
+
+    //every how many steps a dump of the system is saved on a file
+    int   s      = DUMP_DFLT;
+
     char *optstring = "irk:e:f:n:s:";
-    long size = SIZE;
-    int dump = DUMP_DFLT;
     int e = STATIC;
     int c;
 
@@ -181,33 +170,26 @@ int main(int argc, char * argv[]){
         }
     }
 
-   
+    // if s=0 we want to only print the last iteration, let's set it 
+    // to a huge number so that it will be greater for sure
     if(s == 0){
         s = 100000;
     }
   
     if(action == INIT){
-        printf("Initialize matrix\n");
-        //printf("num elements = %ld\n",world_size);
+        printf("Initialize matrix with size %d\n",N);
         initialize(filename,N);
     }
   
     if(action == RUN & e == STATIC){
-        printf("Run static\n");
+        printf("Run static with size %d, %d iterations, saving a file each %d iterations\n",N,n,s);
         run_static(filename,n,s,N);
     }
 
 
     if(action == RUN & e == ORDERED){
-        printf("Run ordered\n");
+        printf("Run ordered with size %d, %d iterations, saving a file each %d iterations\n",N,n,s);
         run_order(filename,n,s,N);
     }
-
-
-
-  
-
-    
-
   return 0;
 } 
