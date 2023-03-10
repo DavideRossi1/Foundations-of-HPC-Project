@@ -1,7 +1,7 @@
 ---
-title: "grafici-commento"
+title: "Orfeo benchmarks"
 output: html_document
-date: '2023-03-03'
+date: '2023-03'
 ---
   
 ```{r setup, include=FALSE}
@@ -14,7 +14,7 @@ The aim of this exercise is to test whether and how different some math librarie
 The first request was to test how performances scale when we fix the number of processors used in the computation and we scale the size of the problem. 
 The second request consisted in testing how performance scale when we fix the problem size and we scale the number of processors.
 
-# SIZE SCALING
+# SIZE SCALABILITY
 
 In this first case, we kept the number of cores fixed (it was requested to use only 64 cores if choose a EPYC node) and we tried to scale over the matrix size. It was asked to consider different matrices sizes, going from $2000\times2000$ to $20000\times20000$ with a certain step, that we fixed at $1000$.
 We chose to use square matrices of the same sizes: if the first matrix has $2000\times2000$ elements, then even the second one will have $2000\times2000$ elements.  
@@ -184,13 +184,13 @@ A final note: we also tried the `none` policy, on its two declinations: `false` 
 
 
 
-# CORE SCALING
+# CORE SCALABILITY
 
 In this second case, we kept the matrix size fixed (12000 x 12000) and we tried to scale over the number of cores (from 1 to 64). Also in this case we used `OMP_PLACES=cores` and we repeated each trial for 10 times and we took a mean of the results. 
 
 ```{r}
 library(ggplot2)
-data <- read.table("HPC-DATA-5.dat", quote="\"", comment.char="")
+data <- read.table("data/HPC-DATA-5.dat", quote="\"", comment.char="")
 colnames(data) <- c("N_CORES", "PRECISION", "POLICY", "TIME", "GFLOPS", "SPEEDUP", "EFFICIENCY", "LIBRARY", "SYNTH")
 data$LIBRARY <- as.factor(data$LIBRARY)
 ```
