@@ -12,6 +12,7 @@ void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char 
 
 void initialize(char* filename, int N){
     int myid , numprocs;
+    MPI_Init(NULL,NULL);
     MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
     int work=N/numprocs+(N%numprocs>myid);
@@ -37,6 +38,7 @@ void initialize(char* filename, int N){
             sprintf(command, "cat partsnap_%3d > init",i);
             system(command);
         }   
-    };
+    }
+    MPI_Finalize();
     free(matrix);
 }
