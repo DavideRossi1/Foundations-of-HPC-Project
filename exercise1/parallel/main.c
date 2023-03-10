@@ -7,7 +7,7 @@
 
 void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
-void initialize(char* filename, long N);
+void initialize(char* filename, int N,int argc, char * argv[]);
 void run_static(char* filename, int steps, long dump, int N);
 void run_order(char* filename, int steps, long dump, int N);
 
@@ -94,7 +94,7 @@ int main(int argc, char * argv[]){
   
     if(action == INIT){
         printf("Initialize matrix with size %d\n",N);
-        initialize(filename,N);
+        initialize(filename,N,argc,argv);
     }
   
     if(action == RUN & e == STATIC){

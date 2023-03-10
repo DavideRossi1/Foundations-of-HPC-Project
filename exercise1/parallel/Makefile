@@ -1,4 +1,4 @@
-CC=gcc
+CC=mpicc
 
 INCDIR=include
 OBJDIR=obj
@@ -21,3 +21,4 @@ clean:
 	rm -rf *.o *.x
 	rm -rf obj/*.o
 	rm -rf snap/snapshot*
+	rm -rf init
