@@ -34,6 +34,7 @@ void initialize(char* filename, int N, int argc, char * argv[]){
         char * file = (char*)malloc(N*N*sizeof(unsigned char));
         sprintf(file, "init");
         write_pgm_image(matrix, MAXVAL, N, N, file); //here is the problem: how to initialize the file?
+        
         for (int i=0; i<numprocs;i++ ) {
             char* command=(char*)malloc(100);
             sprintf(command, "cat partsnap%d >> init",i);
