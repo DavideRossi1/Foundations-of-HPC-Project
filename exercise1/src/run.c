@@ -10,12 +10,25 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 #endif
 
-unsigned char checksingle(unsigned char *matrix,  int i, int N){
+/* //######################## just debugging ###################
+ void printmatrix(unsigned char* matrix, int N){
+    for (int i=0;i<N;i++){
+        for (int j=0;j<N;j++){
+            printf("%d ",matrix[i*N+j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+} 
+//#####################################
+ */
+
+unsigned char checksingle(unsigned char *matrix,  long i, int N){
     int left=N*(i%N==0);
     int right=N*((i+1)%N==0);
-    unsigned int square=N*N;
-    int up=square*((i-N)<0);
-    int down=square*((i+N)>=square);
+    long square=N*N;
+    long up=square*((i-N)<0);
+    long down=square*((i+N)>=square);
     unsigned char status=(
              matrix[i-1 + left]  // west el
             +matrix[i+1 - right] // east el
@@ -32,12 +45,12 @@ unsigned char checksingle(unsigned char *matrix,  int i, int N){
  }
 
 void updatematr(unsigned char *matrix,unsigned char *newmatrix,int N){
-    for(int i=0;i<N*N;i++){
+    for(long i=0;i<N*N;i++){
         newmatrix[i]=checksingle(matrix, i, N);
     }
 }
 
-void run_static(char* filename, int steps, int dump, int N){
+void run_static(char* filename, int steps, long dump, int N){
     unsigned char* matrix;
     int maxval=MAXVAL;
     read_pgm_image(&matrix, &maxval, &N, &N,filename);
@@ -46,16 +59,23 @@ void run_static(char* filename, int steps, int dump, int N){
     for (int i=0;i<steps;i++){
         if((i%2)==0){
             updatematr(matrix, tempmatr, N); 
+            if (i%dump==0 && dump<steps) {
+                char * filename = (char*)malloc(N*N*sizeof(unsigned char));
+                sprintf(filename, "snap/snapshotstat_%03d",i);
+                write_pgm_image(tempmatr, MAXVAL, N, N, filename);
+                free(filename);
+            }  
         }else{
             updatematr(tempmatr, matrix, N);
+            if (i%dump==0 && dump<steps) {
+                char * filename = (char*)malloc(N*N*sizeof(unsigned char));
+                sprintf(filename, "snap/snapshotstat_%03d",i);
+                write_pgm_image(matrix, MAXVAL, N, N, filename);
+                free(filename);
+            }  
         }
-        if (i%dump==0) {
-            char * filename = (char*)malloc(N*N*sizeof(unsigned char));
-            sprintf(filename, "snap/snapshotstat_%03d",i);
-            write_pgm_image(matrix, MAXVAL, N, N, filename);
-            free(filename);
-        }  
     }
+        
     if (dump>steps) {
         char * filename = (char*)malloc(N*N*sizeof(unsigned char));
         sprintf(filename, "snap/snapshotstat_%03d",steps);
@@ -65,13 +85,13 @@ void run_static(char* filename, int steps, int dump, int N){
     free(tempmatr);    
 }
 
-void run_order(char* filename, int steps, int dump, int N){
+void run_order(char* filename, int steps, long dump, int N){
     unsigned char* matrix;
     int maxval=MAXVAL;
     read_pgm_image(&matrix, &maxval, &N, &N,filename);
     for (int i=0;i<steps;i++){
-        for(int i=0;i<N*N;i++){
-            matrix[i] = checksingle(matrix,i,N);
+        for(long j=0;j<N*N;j++){
+            matrix[j] = checksingle(matrix,j,N);
         }
         if (i%dump==0) {
             char * filename = (char*)malloc(N*N*sizeof(unsigned char));

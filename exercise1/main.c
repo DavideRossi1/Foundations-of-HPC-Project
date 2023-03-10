@@ -10,8 +10,8 @@ void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const ch
 //void init(unsigned char *matrix);
 //void update(unsigned char *matrix, int rep);
 void initialize(char* filename, long N);
-void run_static(char* filename, long steps, long dump, long N);
-void run_order(char* filename, int steps, int dump, int N);
+void run_static(char* filename, int steps, long dump, int N);
+void run_order(char* filename, int steps, long dump, int N);
 
 
 
@@ -45,20 +45,6 @@ void run_order(char* filename, int steps, int dump, int N);
     //free(matrix);
 }
  
-
-
-######################## just debugging ###################
- void printmatrix(unsigned char* matrix){
-    for (int i=0;i<N;i++){
-        for (int j=0;j<N;j++){
-            printf("%d ",matrix[i*N+j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-} 
-#####################################
-
 ####################### First trials: they work, need to add the read ####################
  void update(unsigned char *matrix, int rep){
     unsigned char* newmatr=(unsigned char*)malloc(N*N*sizeof(unsigned char));
@@ -130,7 +116,7 @@ int main(int argc, char * argv[]){
     int   n      = N_ITER;
 
     //every how many steps a dump of the system is saved on a file
-    int   s      = DUMP_DFLT;
+    long   s      = DUMP_DFLT;
 
     char *optstring = "irk:e:f:n:s:";
     int e = STATIC;
@@ -171,9 +157,9 @@ int main(int argc, char * argv[]){
     }
 
     // if s=0 we want to only print the last iteration, let's set it 
-    // to a huge number so that it will be greater for sure
+    // to a huge number so that it will be greater than the number of steps for sure
     if(s == 0){
-        s = 100000;
+        s = 1000000;
     }
   
     if(action == INIT){
@@ -182,13 +168,13 @@ int main(int argc, char * argv[]){
     }
   
     if(action == RUN & e == STATIC){
-        printf("Run static with size %d, %d iterations, saving a file each %d iterations\n",N,n,s);
+        printf("Run static with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
         run_static(filename,n,s,N);
     }
 
 
     if(action == RUN & e == ORDERED){
-        printf("Run ordered with size %d, %d iterations, saving a file each %d iterations\n",N,n,s);
+        printf("Run ordered with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
         run_order(filename,n,s,N);
     }
   return 0;
