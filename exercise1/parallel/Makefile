@@ -1,4 +1,4 @@
-CC=mpicc
+CC=mpicc -O3 -fopenmp -march=native -g -Wall -Wextra
 
 INCDIR=include
 OBJDIR=obj

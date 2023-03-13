@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <mpi.h>
+#include <omp.h>
 
 #define MAXVAL 255
 
@@ -23,34 +26,50 @@ void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize,
 //#####################################
  */
 
-unsigned char checksingle(unsigned char *matrix,  long i, int N){
+unsigned char checksingle(unsigned char *matrix,  long i, long N,long M){
     int left=N*(i%N==0);
     int right=N*((i+1)%N==0);
-    long square=N*N;
-    long up=square*((i-N)<0);
-    long down=square*((i+N)>=square);
+    long square=N*M;
+    long up=square*((i-M)<0);
+    long down=square*((i+M)>=square);
     unsigned char status=(
              matrix[i-1 + left]  // west el
             +matrix[i+1 - right] // east el
-            +matrix[i-N + up] //north el
-            +matrix[i+N - down] // south el
-            +matrix[i-1-N + left + up] // nort-west el
-            +matrix[i+1-N - right + up] // north-east el
-            +matrix[i-1+N + left - down] // south-west el
-            +matrix[i+1+N - right - down] // south-east el
+            +matrix[i-M + up] //north el
+            +matrix[i+M - down] // south el
+            +matrix[i-1-M + left + up] // nort-west el
+            +matrix[i+1-M - right + up] // north-east el
+            +matrix[i-1+M + left - down] // south-west el
+            +matrix[i+1+M - right - down] // south-east el
             )/255; // note: all the elements need a correction to account for the fact that we want a 
             // "pacman effect": left and right apply a correction on the elements of the first and last 
             // column, up and down apply a correction on the elements of the first and last row
-    return ((status==2 || status==3)? MAXVAL: 0 );
+    return ((status==5 || status==6)? 0: MAXVAL );
  }
 
-void updatematr(unsigned char *matrix,unsigned char *newmatrix,int N){
-    for(long i=0;i<N*N;i++){
-        newmatrix[i]=checksingle(matrix, i, N);
+void updatematr(unsigned char *matrix,unsigned char *newmatrix,long N,long M){ //generalized for single pieces
+        printf("\n new matrix \n");
+        for(long i=0;i<N*M;i++){
+        newmatrix[i]=checksingle(matrix, i, N,M);
+        printf("%d ",newmatrix[i]);
     }
+        printf("\n end new matrix \n");
 }
 
-void run_static(char* filename, int steps, long dump, int N){
+
+/* unsigned char* enlargematrix(char* matrix, int N){
+    unsigned char* newmatrix=(unsigned char*)malloc((N+2)*(N+2)*sizeof(unsigned char));
+    for(int i=0;i<(N+2)*(N+2);i++){
+        newmatrix[i]=matrix[i+];
+    }
+
+} */
+
+
+
+//########################################################################
+
+void run_static(char* filename, int steps, long dump, int N,int argc, char * argv[]){
     unsigned char* matrix;
     int maxval=MAXVAL;
     read_pgm_image(&matrix, &maxval, &N, &N,filename);
@@ -58,7 +77,7 @@ void run_static(char* filename, int steps, long dump, int N){
     
     for (int i=0;i<steps;i++){
         if((i%2)==0){
-            updatematr(matrix, tempmatr, N); 
+            updatematr(matrix, tempmatr, N,N); 
             if (i%dump==0 && dump<steps) {
                 char * filename = (char*)malloc(N*N*sizeof(unsigned char));
                 sprintf(filename, "snap/snapshotstat_%03d",i);
@@ -66,7 +85,7 @@ void run_static(char* filename, int steps, long dump, int N){
                 free(filename);
             }  
         }else{
-            updatematr(tempmatr, matrix, N);
+            updatematr(tempmatr, matrix, N,N);
             if (i%dump==0 && dump<steps) {
                 char * filename = (char*)malloc(N*N*sizeof(unsigned char));
                 sprintf(filename, "snap/snapshotstat_%03d",i);
@@ -85,13 +104,17 @@ void run_static(char* filename, int steps, long dump, int N){
     free(tempmatr);    
 }
 
+
+
+//#######################################################################
+
 void run_order(char* filename, int steps, long dump, int N){
     unsigned char* matrix;
     int maxval=MAXVAL;
     read_pgm_image(&matrix, &maxval, &N, &N,filename);
     for (int i=0;i<steps;i++){
         for(long j=0;j<N*N;j++){
-            matrix[j] = checksingle(matrix,j,N);
+            matrix[j] = checksingle(matrix,j,N,N);
         }
         if (i%dump==0) {
             char * filename = (char*)malloc(N*N*sizeof(unsigned char));

@@ -8,7 +8,7 @@
 void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 void initialize(char* filename, int N,int argc, char * argv[]);
-void run_static(char* filename, int steps, long dump, int N);
+void run_static(char* filename, int steps, long dump, int N,int argc, char * argv[]);
 void run_order(char* filename, int steps, long dump, int N);
 
 
@@ -97,13 +97,13 @@ int main(int argc, char * argv[]){
         initialize(filename,N,argc,argv);
     }
   
-    if(action == RUN & e == STATIC){
+    if((action == RUN) & (e == STATIC)){
         printf("Run static with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
-        run_static(filename,n,s,N);
+        run_static(filename,n,s,N,argc, argv);
     }
 
 
-    if(action == RUN & e == ORDERED){
+    if((action == RUN) & (e == ORDERED)){
         printf("Run ordered with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
         run_order(filename,n,s,N);
     }

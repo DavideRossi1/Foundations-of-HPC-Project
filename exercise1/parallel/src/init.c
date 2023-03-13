@@ -33,14 +33,18 @@ void initialize(char* filename, int N, int argc, char * argv[]){
     if (myid==0){
         char * file = (char*)malloc(N*N*sizeof(unsigned char));
         sprintf(file, "init");
-        write_pgm_image(matrix, MAXVAL, N, N, file); //here is the problem: how to initialize the file?
-        
-        for (int i=0; i<numprocs;i++ ) {
-            char* command=(char*)malloc(100);
+        write_pgm_image(filename, MAXVAL, N, N, file); //here is the problem: how to initialize the file?
+        char* command=(char*)malloc(100);
+        system("cat partsnap* > init");
+        /* for (int i=0; i<numprocs;i++ ) {
             sprintf(command, "cat partsnap%d >> init",i);
             system(command);
-        }   
-        //system("rm partsnap*");
+        }  */
+        //write_pgm_image(file, MAXVAL, N, N, file);
+
+        free(command);
+        free(file);  
+        system("rm partsnap*");
     }
     MPI_Finalize();
     //free(matrix);
