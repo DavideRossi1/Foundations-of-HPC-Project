@@ -15,8 +15,7 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 
 #define MAXVAL 255
 
-#define CPU_TIME (clock_gettime( CLOCK_MONOTONIC, &ts ), (double)ts.tv_sec +	\
-		  (double)ts.tv_nsec * 1e-9)
+
 
 
 /*
@@ -267,7 +266,7 @@ void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, i
 
             if(pRank==0){
                 char * fname = (char*)malloc(60);
-                sprintf(fname, "snap/image_STATIC_%03d",i);
+                sprintf(fname, "snap/image_STATIC_%03d",i+1);
 	            write_pgm_image(world, MAXVAL, size, size, fname);
                 free(fname);
             }
@@ -375,6 +374,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     MPI_Bcast(rcounts_g, pSize, MPI_INT,0, MPI_COMM_WORLD);
     MPI_Bcast(displs_g, pSize, MPI_INT, 0, MPI_COMM_WORLD);
 
+    
     // main call
     if(pSize > 1){
 	    grw_parallel_static(temp_world, size, pSize, pRank, scounts, displs, rcounts_g, displs_g, dump, times); 
@@ -382,7 +382,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     }else{
         grw_serial_static(world, size, dump, times);
     }
-
+    
 
     free(temp_world);
     free(world);
