@@ -5,6 +5,22 @@
 #include <string.h>
 #include <omp.h>
 
+#if defined(_OPENMP)
+#define CPU_TIME ({struct  timespec ts; clock_gettime( CLOCK_REALTIME, &ts ),\
+                                          (double)ts.tv_sec +           \
+                                          (double)ts.tv_nsec * 1e-9;})
+
+#define CPU_TIME_th ({struct  timespec myts; clock_gettime( CLOCK_THREAD_CPUTIME_ID, &myts ),\
+                                             (double)myts.tv_sec +	\
+                                             (double)myts.tv_nsec * 1e-9;})
+#else
+
+#define CPU_TIME ({struct  timespec ts; clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ),\
+                                          (double)ts.tv_sec +           \
+                                          (double)ts.tv_nsec * 1e-9;})
+
+#endif
+
 #ifndef RW_PGM
 #define RW_PGM
 void read_pgm_image( unsigned char  **image, int *maxval, long *xsize, long *ysize, const char *image_name);
@@ -279,7 +295,8 @@ void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, 
 ######################################################
 */
 void run_static(char * filename, int times, int dump, int * argc, char ** argv[]){
-   // printf("run static");
+    double tstart = CPU_TIME;
+	
     unsigned char* world;
     long size=0;
     int maxval=0;
@@ -376,5 +393,9 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
     free(temp_world);
     free(world);
-    MPI_Finalize();
+    double tend = CPU_TIME;
+	if(pRank==0){
+    printf("%f\n",tend-tstart);
+}    
+MPI_Finalize();
 }

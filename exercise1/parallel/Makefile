@@ -3,22 +3,21 @@ CC=mpicc -O3 -fopenmp -march=native -g -Wall -Wextra
 INCDIR=include
 OBJDIR=obj
 
-RW=$(OBJDIR)/read-write_pgm.o 
-INIT=$(OBJDIR)/init.o 
-RUN=$(OBJDIR)/run.o 
-OBJECTS=main.o $(RW) $(INIT) $(RUN)
+RW=$(OBJDIR)/read_write_pgm.o 
+INIT=$(OBJDIR)/w_init.o 
+IT_STATIC=$(OBJDIR)/grow_static.o
+IT_ORDERED=$(OBJDIR)/grow_ordered.o
+OBJECTS= obj/main.o $(RW) $(INIT) $(IT_ORDERED) $(IT_STATIC)
 
 main.x: $(OBJECTS)
-#	mkdir -p output
 	mkdir -p snap
 	$(CC) $(OBJECTS) -o $@
-main.o: main.c
-	$(CC) -c main.c
+obj/main.o: main.c
+	$(CC) -c main.c -o $@
 obj/%.o: src/%.c
 	mkdir -p obj
 	$(CC) -c $^ -o $@
 clean:
-	rm -rf *.o *.x
+	rm -rf main.x
 	rm -rf obj/*.o
-	rm -rf snap/snapshot*
-	rm -rf init
+	rm -rf snap/image*

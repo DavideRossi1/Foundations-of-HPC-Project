@@ -5,6 +5,22 @@
 #include <string.h>
 //#include <omp.h>
 
+#if defined(_OPENMP)
+#define CPU_TIME ({struct  timespec ts; clock_gettime( CLOCK_REALTIME, &ts ),\
+                                          (double)ts.tv_sec +           \
+                                          (double)ts.tv_nsec * 1e-9;})
+
+#define CPU_TIME_th ({struct  timespec myts; clock_gettime( CLOCK_THREAD_CPUTIME_ID, &myts ),\
+                                             (double)myts.tv_sec +	\
+                                             (double)myts.tv_nsec * 1e-9;})
+#else
+
+#define CPU_TIME ({struct  timespec ts; clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ),\
+                                          (double)ts.tv_sec +           \
+                                          (double)ts.tv_nsec * 1e-9;})
+
+#endif
+
 #ifndef RW_PGM
 #define RW_PGM
 void read_pgm_image( unsigned char  **image, int *maxval, int *xsize, int *ysize, const char *image_name);
@@ -14,9 +30,6 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 
 
 #define MAXVAL 255
-
-#define CPU_TIME (clock_gettime( CLOCK_MONOTONIC, &ts ), (double)ts.tv_sec +	\
-		  (double)ts.tv_nsec * 1e-9)
 
 void update_world(unsigned char * world, long size){
 
@@ -98,6 +111,7 @@ void grw_serial(unsigned char* world, long size, int times, int snap){
 
 void run_ordered(char * filename, int times, int dump){
   
+  double tstart = CPU_TIME;
 
   unsigned char * world;
   int size = 0;
@@ -108,6 +122,8 @@ void run_ordered(char * filename, int times, int dump){
 
   grw_serial(world, size, times, dump);
 
+  double tend = CPU_TIME;
+  printf("%f\n",tend-tstart);
   free(world);
 }
 

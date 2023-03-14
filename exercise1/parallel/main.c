@@ -1,59 +1,70 @@
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <omp.h>
 #include <getopt.h>
 #include <mpi.h>
 
-
+//functions:
 void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name);
-void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
-void initialize(char* filename, int N,int argc, char * argv[]);
-void run_static(char* filename, int steps, long dump, int N,int argc, char * argv[]);
-void run_order(char* filename, int steps, long dump, int N);
+void choose_initialization(const char * filename, long size, int * argc, char ** argv[]);
+void run_static(char * filename, int times, int snap, int * argc, char ** argv[]);
+void run_ordered(char * filename, int times, int snap );
 
 
+#define SIZE 10
 
+//number that identifies the dead elements
 #define MAXVAL 255
+
 //initialize the playground
 #define INIT 1
+
 //run the playground
-#define RUN  2
+#define RUN 2
+
 //default playground size
-#define N_DFLT 100
+#define K_DFLT 100
+
 //default number of iterations
-#define N_ITER 50
+#define N_DFLT 50
+
 //default number of iterations between each snap
-#define DUMP_DFLT 0
+#define SNAP_DFLT 5
+
 //evolution types
 #define ORDERED 0
 #define STATIC  1
 
 
+
+
 int main(int argc, char * argv[]){
 
-    int   action = 0;
-    int   N      = N_DFLT;
+    //we initialize options with default values:
 
-    //number of steps to be calculated
-    int   n      = N_ITER;
+    //default playground size
+    int k = K_DFLT;
 
-    //every how many steps a dump of the system is saved on a file
-    long   s      = DUMP_DFLT;
+    //default evolution type
+    int e = ORDERED;
+
+    //default number of steps to be calculated
+    int n = N_DFLT;
+
+    //by default, every how many steps a dump of the system is saved on a file
+    int snap = SNAP_DFLT;
+
+    //by default, name of the file to be read/written
+    char *filename = "init";
+
+    //by default, do not initialize the playground
+    int action = 0;
+
 
     char *optstring = "irk:e:f:n:s:";
-    int e = STATIC;
+
     int c;
-
-    char * filename="init";
-    /* 
-    MPI_Init(&argc,&argv);
-    int numprocs;
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    int myid;
-    MPI_Comm_rank(MPI_COMM_WORLD,&myid);
-
- */
-
 
     while ((c = getopt(argc, argv, optstring)) != -1) {
         switch(c) {
@@ -65,47 +76,53 @@ int main(int argc, char * argv[]){
             action = RUN; break;
       
         case 'k':
-            N = atoi(optarg); break;
+            k = atoi(optarg); break;
 
         case 'e':
             e = atoi(optarg); break;
 
         case 'f':
             filename = (char*)malloc( sizeof(optarg)+1 );
-            sprintf(filename, "%s", optarg );
+            sprintf(filename, "%s", optarg);
             break;
 
         case 'n':
             n = atoi(optarg); break;
 
         case 's':
-            s = atoi(optarg); break;
+            snap = atoi(optarg); break;
 
         default :
         printf("argument -%c not known\n", c ); break;
         }
     }
 
-    // if s=0 we want to only print the last iteration, let's set it 
-    // to a huge number so that it will be greater than the number of steps for sure
-    if(s == 0){
-        s = 1000000;
+
+    //asked: if snap=0, just print the playground at the end of the game
+    if(snap == 0){
+        snap = 500000;
     }
-  
+
+    //if -i is passed:
     if(action == INIT){
-        printf("Initialize matrix with size %d\n",N);
-        initialize(filename,N,argc,argv);
+        choose_initialization(filename, k, &argc, &argv);
+    }
+
+
+    //if -r and -e0 are passed:
+    if((action == RUN) & (e == ORDERED)){
+        run_ordered(filename, n, snap);
+        
     }
   
+    //if -r and -e1 are passed:
     if((action == RUN) & (e == STATIC)){
-        printf("Run static with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
-        run_static(filename,n,s,N,argc, argv);
+        run_static(filename, n, snap, &argc, &argv);
+        
     }
+  
 
-
-    if((action == RUN) & (e == ORDERED)){
-        printf("Run ordered with size %d, %d iterations, saving a file each %ld iterations\n",N,n,s);
-        run_order(filename,n,s,N);
-    }
   return 0;
-} 
+    
+}
+
