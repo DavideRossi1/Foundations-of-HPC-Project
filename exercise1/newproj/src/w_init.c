@@ -41,9 +41,9 @@ void initialize_serial(const char* filename, unsigned char * world, long size){
 
 
 void initialize_parallel(unsigned char * world, int pSize, int pRank, int* rcounts, int* displs){
-for(int i=0; i<pSize; i++){
-printf("rcounts del processo %d contiene gli elementi: %d\n", pRank, rcounts[i]);
-}    
+//for(int i=0; i<pSize; i++){
+//printf("rcounts del processo %d contiene gli elementi: %d\n", pRank, rcounts[i]);
+//}    
     //for example if we have size=10 and pSize=3, the work (i.e. rows) subdivision would be 4-3-3
     //long smaller_size = size%pSize <= pRank? (long)(size/pSize) : (long)(size/pSize) +1;
 
@@ -80,7 +80,7 @@ printf("rcounts del processo %d contiene gli elementi: %d\n", pRank, rcounts[i])
 
 //printf("qua dovrei scrivere %d elementi\n", rcounts[pRank]);
 MPI_Gatherv(process_world, rcounts[pRank], MPI_UNSIGNED_CHAR, world, rcounts, displs, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-printf("il processo %d ha inviato %d elementi al processo 0\n", pRank, rcounts[pRank]);
+//printf("il processo %d ha inviato %d elementi al processo 0\n", pRank, rcounts[pRank]);
    free(process_world);
 }
 
@@ -93,7 +93,7 @@ unsigned char* world = (unsigned char*)malloc(size*size*sizeof(char));
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
     MPI_Comm_size(MPI_COMM_WORLD, &pSize);
     
-printf("ciao, sono %d\n", pRank);
+//printf("ciao, sono %d\n", pRank);
 
 //here the determination of rcounts and displs:
     int* displs = (int *)malloc(pSize*sizeof(int)); 
@@ -116,9 +116,9 @@ if(pRank==0){
 		
 		//aggiorno cumulative, che mi dice da quale elemento dovrà partire il processo successivo
 		cumulative = cumulative+rcounts[i];
-		printf("prima del broadcast, il processo 0 ha %d, %d\n", rcounts[i], displs[i]);
+//		printf("prima del broadcast, il processo 0 ha %d, %d\n", rcounts[i], displs[i]);
 	}
-printf("%ld %d\n", size*size, cumulative);
+//printf("%ld %d\n", size*size, cumulative);
 
 }
 
@@ -152,18 +152,18 @@ MPI_Bcast(displs, pSize, MPI_INT, 0, MPI_COMM_WORLD);
 //}
 
 if(pSize > 1){
-	printf("parallelo\n");
+//	printf("parallelo\n");
 	for(int i=0; i<pSize; i++){
-printf("processo %d ha %d come rcounts\n", pRank, rcounts[i]);
+//printf("processo %d ha %d come rcounts\n", pRank, rcounts[i]);
 }
         initialize_parallel(world, pSize, pRank, rcounts, displs);
-printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
+//printf("processo %d è arrivato con %d elementi\n", pRank, rcounts[pRank]);
 MPI_Barrier(MPI_COMM_WORLD);
 	if(pRank==0){
 		write_pgm_image(world, MAXVAL, size, size, filename);
 	}
 }else{
-	printf("seriale\n");
+//	printf("seriale\n");
         initialize_serial(filename, world, size);
 }
   MPI_Finalize();

@@ -159,12 +159,12 @@ void printmatrix(unsigned char* matrix, int N,int M){
 ######################################################
 */
 
-void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, long sizey, int times, int pRank, int pSize, MPI_Status* status, MPI_Request* req){ 
+void evaluate_world(unsigned char* world, unsigned char* new_world, unsigned int sizex, unsigned int sizey, int times, int pRank, int pSize, MPI_Status* status, MPI_Request* req){ 
 
     double invsizex=1.0/sizex;
     double invMV=1.0/MAXVAL;
     #pragma omp parallel for
-    for(long k=sizex; k<sizex*(sizey-1); k++){
+    for(unsigned int k=sizex; k<sizex*(sizey-1); k++){
 
         long col = k%sizex;
         long r = k*invsizex;
@@ -234,7 +234,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
 }
 
 
-void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, long* scounts, long* displs, long* rcounts_g, long* displs_g, int snap, int times){
+void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, unsigned int* scounts, unsigned int* displs, unsigned int* rcounts_g, unsigned int* displs_g, int snap, int times){
     MPI_Status status;
     MPI_Request req;
     
@@ -282,13 +282,19 @@ void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, 
 ######################################################
 */
 void run_static(char * filename, int times, int dump, int * argc, char ** argv[]){
-
+   // printf("run static");
     unsigned char* world;
     long size=0;
     int maxval=0;
 
     int pRank, pSize;
-    MPI_Init(argc, argv);
+    int mpi_provided_thread_level;
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_FUNNELED,&mpi_provided_thread_level);
+    if ( mpi_provided_thread_level < MPI_THREAD_FUNNELED ) {
+	printf("a problem arise when asking for MPI_THREAD_FUNNELED level\n");
+	MPI_Finalize();
+	exit( 1 );
+    }
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
     MPI_Comm_size(MPI_COMM_WORLD, &pSize);  
 
@@ -322,21 +328,21 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     }
 
     //auxiliary vectors for Scatterv
-    long* displs = (long *)malloc(pSize*sizeof(int));  //starting index for each process
-    long* scounts = (long *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
+    unsigned int* displs = (unsigned int *)malloc(pSize*sizeof(unsigned int));  //starting index for each process
+    unsigned int* scounts = (unsigned int *)malloc(pSize*sizeof(unsigned int)); //number of elements to assign to each process
 
     //auxiliary vectors for Gatherv
-    long* displs_g = (long *)malloc(pSize*sizeof(int));  //starting index for each process
-    long* rcounts_g = (long *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
+    unsigned int* displs_g = (unsigned int *)malloc(pSize*sizeof(unsigned int));  //starting index for each process
+    unsigned int* rcounts_g = (unsigned int *)malloc(pSize*sizeof(unsigned int)); //number of elements to assign to each process
 
 
 
 
     if(pRank==0){  //no need to repeat this for all the processes
-        int smaller_size;
-        long cumulative=0;
-        long cumulative_g=0;
-        int std_size=size/pSize;
+        unsigned int smaller_size;
+        unsigned int cumulative=0;
+        unsigned int cumulative_g=0;
+        unsigned int std_size=size/pSize;
 
 	    for(int i=0; i<pSize; i++){
 		
