@@ -7,8 +7,8 @@
 
 #ifndef RW_PGM
 #define RW_PGM
-void read_pgm_image( unsigned char  **image, int *maxval, int *xsize, int *ysize, const char *image_name);
-void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
+void read_pgm_image( unsigned char  **image, int *maxval, long *xsize, long *ysize, const char *image_name);
+void write_pgm_image( unsigned char *image, int maxval, long xsize, long ysize, const char *image_name);
 #endif
 
 
@@ -184,11 +184,11 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
                   world[r_next*sizex+col_prev]+
                   world[r_next*sizex+col]+
                   world[r_next*sizex+col_next];
-        int cond = sum*invMV;
+        sum = sum*invMV;
     
         //Update the cell
         new_world[k] = 0;
-        if((cond==2) || (cond==3)){
+        if((sum==2) || (sum==3)){
             new_world[k]=MAXVAL;
         }
     
@@ -234,7 +234,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
 }
 
 
-void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, int* scounts, int* displs, int* rcounts_g, int* displs_g, int snap, int times){
+void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, long* scounts, long* displs, long* rcounts_g, long* displs_g, int snap, int times){
     MPI_Status status;
     MPI_Request req;
     
@@ -284,7 +284,7 @@ void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, i
 void run_static(char * filename, int times, int dump, int * argc, char ** argv[]){
 
     unsigned char* world;
-    int size=0;
+    long size=0;
     int maxval=0;
 
     int pRank, pSize;
@@ -297,7 +297,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     read_pgm_image(&world, &maxval, &size, &size, filename);
     if (pSize>size) {
         if(pRank==0){
-            printf("Program interrupted. You ran with %d processes on a matrix of size %d x %d, set the number of processes to a value lower or equal than %d \n",pSize,size,size,size);
+            printf("Program interrupted. You ran with %d processes on a matrix of size %ld x %ld, set the number of processes to a value lower or equal than %ld \n",pSize,size,size,size);
         }
         exit(1);
     }
@@ -322,20 +322,20 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     }
 
     //auxiliary vectors for Scatterv
-    int* displs = (int *)malloc(pSize*sizeof(int));  //starting index for each process
-    int* scounts = (int *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
+    long* displs = (long *)malloc(pSize*sizeof(int));  //starting index for each process
+    long* scounts = (long *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
 
     //auxiliary vectors for Gatherv
-    int* displs_g = (int *)malloc(pSize*sizeof(int));  //starting index for each process
-    int* rcounts_g = (int *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
+    long* displs_g = (long *)malloc(pSize*sizeof(int));  //starting index for each process
+    long* rcounts_g = (long *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
 
 
 
 
     if(pRank==0){  //no need to repeat this for all the processes
         int smaller_size;
-        int cumulative=0;
-        int cumulative_g=0;
+        long cumulative=0;
+        long cumulative_g=0;
         int std_size=size/pSize;
 
 	    for(int i=0; i<pSize; i++){
