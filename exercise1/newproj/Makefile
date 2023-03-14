@@ -3,9 +3,9 @@ CC=mpicc -O3 -fopenmp -march=native -g -Wall -Wextra
 INCDIR=include
 OBJDIR=obj
 
-RW=$(OBJDIR)/read_write_pgm2.o 
-INIT=$(OBJDIR)/w_init2.o 
-IT_STATIC=$(OBJDIR)/grow_static5.o
+RW=$(OBJDIR)/read_write_pgm.o 
+INIT=$(OBJDIR)/w_init.o 
+IT_STATIC=$(OBJDIR)/grow_static.o
 IT_ORDERED=$(OBJDIR)/grow_ordered.o
 OBJECTS= obj/main.o $(RW) $(INIT) $(IT_ORDERED) $(IT_STATIC)
 
