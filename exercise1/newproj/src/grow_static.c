@@ -32,33 +32,34 @@ void evaluate_world_serial(unsigned char* world, unsigned char* new_world, long 
     //funzione che usa world solo tramite lettura, per stabilire se aggiornare o meno new_world
     
 
-    int SUM;
-
+    double invsizex=1.0/sizex;
+    double invMV=1.0/MAXVAL;
     for(long k=0; k<sizex*sizey; k++){
 
         //solo per controllo
 	    //printf("%d\n", world[k]);
 
         //determiniamo il numero di riga e di colonna in cui siamo
-        long row = k/sizex;
+        long row = k*invsizex;
         long col = k%sizey;
+        long square=sizex*sizex;
 
-        SUM = 0;
+
 
         //contiamo il numero di vive e di morte nelle circostanze
-        SUM = world[(sizex+row-1)%sizex*sizex + (sizey+col-1)%sizey] 
-            + world[(sizex+row+0)%sizex*sizex + (sizey+col-1)%sizey] 
-            + world[(sizex+row+1)%sizex*sizex + (sizey+col-1)%sizey] 
-            + world[(sizex+row-1)%sizex*sizex + (sizey+col+0)%sizey] 
-            + world[(sizex+row+1)%sizex*sizex + (sizey+col+0)%sizey] 
-            + world[(sizex+row-1)%sizex*sizex + (sizey+col+1)%sizey] 
-            + world[(sizex+row+0)%sizex*sizex + (sizey+col+1)%sizey] 
-            + world[(sizex+row+1)%sizex*sizex + (sizey+col+1)%sizey];
+        int SUM = world[(sizex+row-1)%square + (sizey+col-1)%sizey] 
+                + world[(sizex+row+0)%square + (sizey+col-1)%sizey] 
+                + world[(sizex+row+1)%square + (sizey+col-1)%sizey] 
+                + world[(sizex+row-1)%square + (sizey+col+0)%sizey] 
+                + world[(sizex+row+1)%square + (sizey+col+0)%sizey] 
+                + world[(sizex+row-1)%square + (sizey+col+1)%sizey] 
+                + world[(sizex+row+0)%square + (sizey+col+1)%sizey] 
+                + world[(sizex+row+1)%square + (sizey+col+1)%sizey];
 
 
         //dividendo per il valore (MAXVAL=255) che rappresenta le celle morte
         //otteniamo il numero di morti che circondano la cella in posizione (row, col)
-        SUM = SUM/MAXVAL;
+        SUM = SUM*invMV;
 
         //di default, la facciamo morire
         new_world[k] = 0;
@@ -77,16 +78,7 @@ void grw_serial_static(unsigned char* world, long size, int snap, int times){
     //mondo ausiliario per fare lo switch tra lettura e scrittura
     unsigned char* new_world = (unsigned char *)malloc(size*size*sizeof(unsigned char));
 
-
-    //secondo me non serve, ma controllare che non impazzisca se non abbiamo 
-    //inizializzato new_world in qualche modo
-    /* for(int i=0; i<size*size; i++){
-        new_world[i] = world[i];
-    }
- */
-
     for(int i=0; i<times; i++){
-        //OTTIMIZZABILE: usare puntatori ai mondi: 2 puntatori, si chiama una sola volta evaluate_world
         unsigned char * ptr1=(i%2==0)? world: new_world; 
         unsigned char * ptr2=(i%2==0)? new_world: world; 
 
@@ -168,13 +160,14 @@ void printmatrix(unsigned char* matrix, int N,int M){
 */
 
 void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, long sizey, int times, int pRank, int pSize, MPI_Status* status, MPI_Request* req){ 
-    //funzione che usa world solo tramite lettura, per stabilire se aggiornare o meno new_world
 
+    double invsizex=1.0/sizex;
+    double invMV=1.0/MAXVAL;
     #pragma omp parallel for
     for(long k=sizex; k<sizex*(sizey-1); k++){
 
         long col = k%sizex;
-        long r = k/sizex;
+        long r = k*invsizex;
     
         //Calculate the neighbours
         long col_prev = col-1>=0 ? col-1 : sizex-1;
@@ -191,7 +184,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, long sizex, 
                   world[r_next*sizex+col_prev]+
                   world[r_next*sizex+col]+
                   world[r_next*sizex+col_next];
-        int cond = sum/MAXVAL;
+        int cond = sum*invMV;
     
         //Update the cell
         new_world[k] = 0;
@@ -252,13 +245,13 @@ void grw_parallel_static(unsigned char* world, int size, int pSize, int pRank, i
     
     MPI_Scatterv(world, scounts, displs, MPI_UNSIGNED_CHAR, new_world, scounts[pRank], MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     
-    
+    double invsize=1.0/size;
     for(int i=0; i<times; i++){
 
         unsigned char * ptr1=(i%2==0)? new_world: temp_new_world; 
         unsigned char * ptr2=(i%2==0)? temp_new_world: new_world; 
 
-        evaluate_world(ptr1, ptr2, size, (long)scounts[pRank]/size, times, pRank, pSize, &status, &req); 
+        evaluate_world(ptr1, ptr2, size, (long)scounts[pRank]*invsize, times, pRank, pSize, &status, &req); 
 
         if(i%snap==0){
             MPI_Barrier(MPI_COMM_WORLD);
@@ -302,13 +295,19 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
     //serial read
     read_pgm_image(&world, &maxval, &size, &size, filename);
+    if (pSize>size) {
+        if(pRank==0){
+            printf("Program interrupted. You ran with %d processes on a matrix of size %d x %d, set the number of processes to a value lower or equal than %d \n",pSize,size,size,size);
+        }
+        exit(1);
+    }
 
     //temporary world that contains two more lines, needed for the parallel case
     unsigned char* temp_world = (unsigned char *)malloc(size*(size+2)*sizeof(unsigned char));
 
     //let's fill the world
     #pragma omp parallel for
-    for(int i=0; i<size*(size+2); i++){
+    for(long i=0; i<size*(size+2); i++){
     
         if((i>= size) & (i<size*(size+1))){
             temp_world[i] = world[i-size];
@@ -326,34 +325,37 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     int* displs = (int *)malloc(pSize*sizeof(int));  //starting index for each process
     int* scounts = (int *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
 
-    int smaller_size;
-    int cumulative=0;
-
-
     //auxiliary vectors for Gatherv
     int* displs_g = (int *)malloc(pSize*sizeof(int));  //starting index for each process
     int* rcounts_g = (int *)malloc(pSize*sizeof(int)); //number of elements to assign to each process
 
 
-    int smaller_size_g;
-    int cumulative_g=0;
 
 
     if(pRank==0){  //no need to repeat this for all the processes
+        int smaller_size;
+        int cumulative=0;
+        int cumulative_g=0;
+        int std_size=size/pSize;
+
 	    for(int i=0; i<pSize; i++){
 		
-            smaller_size = size%pSize <= i? size/pSize: size/pSize+1; //work for each process
+            smaller_size = size%pSize <= i? std_size: std_size+1; //work for each process
             // also smaller_size= size/pSize+(size%pSize>pRank)
 
 		    scounts[i]=(smaller_size+2)*size;
 		    displs[i]=cumulative;
-
-		    cumulative = cumulative+(scounts[i]-2*size);
+            cumulative = cumulative+(scounts[i]-2*size);
+            
+            rcounts_g[i]=smaller_size*size;
+		    displs_g[i]=cumulative_g;
+		    cumulative_g = cumulative_g+rcounts_g[i];
+		   
 
     	}
 
 
-	    for(int i=0; i<pSize; i++){
+	    /* for(int i=0; i<pSize; i++){
 		
             // is this variable really needed? Is it not equal to smaller_size?
             smaller_size_g = size%pSize <= i? size/pSize: size/pSize+1; //work for each process
@@ -363,7 +365,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
 		    cumulative_g = cumulative_g+rcounts_g[i];
 
-        }
+        } */
 
     }
 
