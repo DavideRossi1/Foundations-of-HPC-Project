@@ -36,9 +36,6 @@ void evaluate_world_serial(unsigned char* world, unsigned char* new_world, long 
     double invMV=1.0/MAXVAL;
     for(long k=0; k<sizex*sizey; k++){
 
-        //solo per controllo
-	    //printf("%d\n", world[k]);
-
         //determiniamo il numero di riga e di colonna in cui siamo
         long row = k*invsizex;
         long col = k%sizey;
@@ -85,7 +82,7 @@ void grw_serial_static(unsigned char* world, long size, int snap, int times){
         evaluate_world_serial(ptr1, ptr2, size, size); 
         if(i%snap==0){
             char * fname = (char*)malloc(60);
-            sprintf(fname, "snap/image_STATIC_%03d",i);
+            sprintf(fname, "snap/snapshot_STATIC_%03d",i+1);
             write_pgm_image(ptr2, MAXVAL, size, size, fname);
             free(fname);
         }    
@@ -259,7 +256,7 @@ void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, 
 
             if(pRank==0){
                 char * fname = (char*)malloc(60);
-                sprintf(fname, "snap/image_STATIC_%03d",i+1);
+                sprintf(fname, "snap/snapshot_STATIC_%03d",i+1);
 	            write_pgm_image(world, MAXVAL, size, size, fname);
                 free(fname);
             }
@@ -291,9 +288,9 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     int mpi_provided_thread_level;
     MPI_Init_thread( &argc, &argv, MPI_THREAD_FUNNELED,&mpi_provided_thread_level);
     if ( mpi_provided_thread_level < MPI_THREAD_FUNNELED ) {
-	printf("a problem arise when asking for MPI_THREAD_FUNNELED level\n");
-	MPI_Finalize();
-	exit( 1 );
+	    printf("a problem arise when asking for MPI_THREAD_FUNNELED level\n");
+	    MPI_Finalize();
+	    exit( 1 );
     }
     MPI_Comm_rank(MPI_COMM_WORLD, &pRank);
     MPI_Comm_size(MPI_COMM_WORLD, &pSize);  
@@ -336,8 +333,6 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
     unsigned int* rcounts_g = (unsigned int *)malloc(pSize*sizeof(unsigned int)); //number of elements to assign to each process
 
 
-
-
     if(pRank==0){  //no need to repeat this for all the processes
         unsigned int smaller_size;
         unsigned int cumulative=0;
@@ -359,19 +354,6 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 		   
 
     	}
-
-
-	    /* for(int i=0; i<pSize; i++){
-		
-            // is this variable really needed? Is it not equal to smaller_size?
-            smaller_size_g = size%pSize <= i? size/pSize: size/pSize+1; //work for each process
-
-		    rcounts_g[i]=smaller_size_g*size;
-		    displs_g[i]=cumulative_g;
-
-		    cumulative_g = cumulative_g+rcounts_g[i];
-
-        } */
 
     }
 

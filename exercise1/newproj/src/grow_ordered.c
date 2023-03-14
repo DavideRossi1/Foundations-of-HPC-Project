@@ -87,7 +87,7 @@ void grw_serial(unsigned char* world, long size, int times, int snap){
     if(i%snap==0){
       //the number of iterations to save in fname could not exceed times
       char * fname = (char*)malloc(60);
-      sprintf(fname, "snap/image_ORDERED_%03d",i+1);
+      sprintf(fname, "snap/snapshot_ORDERED_%03d",i+1);
       //we print ONLY these images
       write_pgm_image(world, MAXVAL, size, size, fname);
       free(fname);
@@ -104,26 +104,11 @@ void run_ordered(char * filename, int times, int dump){
   int maxval = 0; 
   
   //first of all, i need to read the previous world state
-  /* printf("tutto bene \n");
-  printf("controllino: %p, %p, %p, %d, %s \n", &world, &maxval, &size, size, filename);
-   */
   read_pgm_image(&world, &maxval, &size, &size, filename);
 
-  /* printf("ancora tutto bene \n");
-
-  printf("controllino #2: %p, %d, %d, %d\n", &world, size, times, dump);
-   */
   grw_serial(world, size, times, dump);
 
-  /* for(int i=0; i<size*size; i++){
-   printf("%d\n",  world[i]);
-  }
-  
-  printf("\neccoci \n");
- */
-
-
-  //free(world);
+  free(world);
 }
 
 
