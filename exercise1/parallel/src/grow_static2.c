@@ -95,7 +95,7 @@ void grw_serial_static(unsigned char* world, long size, int snap, int times){
         unsigned char * ptr1=(i%2==0)? world: new_world; 
         unsigned char * ptr2=(i%2==0)? new_world: world; 
 
-        evaluate_world_serial(ptr1, ptr2, size, size); 
+        updatematr(ptr1, ptr2, size, size); 
         if(i%snap==0){
             char * fname = (char*)malloc(60);
             sprintf(fname, "snap/snapshot_STATIC_%03d",i+1);
@@ -117,7 +117,7 @@ void grw_serial_static(unsigned char* world, long size, int snap, int times){
 #                                                    #
 ######################################################
 
-
+*/
 unsigned char checksingle(unsigned char *matrix,  long i, long N,long M){
     int left=N*(i%N==0);
     int right=N*((i+1)%N==0);
@@ -156,7 +156,7 @@ void printmatrix(unsigned char* matrix, int N,int M){
     }
     printf("\n");
 } 
- */
+ 
 
 //###########################################################################################################################
 
@@ -176,7 +176,7 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, unsigned int
 
     double invsizex=1.0/sizex;
     double invMV=1.0/MAXVAL;
-    #pragma omp for
+    #pragma omp parallel for
     for(unsigned int k=sizex; k<sizex*(sizey-1); k++){
 
         long col = k%sizex;
@@ -244,7 +244,6 @@ void evaluate_world(unsigned char* world, unsigned char* new_world, unsigned int
         MPI_Recv(new_world, sizex, MPI_UNSIGNED_CHAR, pRank-1, tag_even, MPI_COMM_WORLD, status);
     }
     }
-	#pragma omp barrier
 }
 
 
@@ -267,8 +266,6 @@ void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, 
 
         evaluate_world(ptr1, ptr2, size, (long)scounts[pRank]*invsize, times, pRank, pSize, &status, &req); 
 
-	#pragma omp master
-	{
         if(i%snap==0){
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Gatherv(&ptr2[size], rcounts_g[pRank], MPI_UNSIGNED_CHAR, world, rcounts_g, displs_g, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
@@ -281,7 +278,6 @@ void grw_parallel_static(unsigned char* world, long size, int pSize, int pRank, 
             }
 
         }
-	}
     }
 
     free(new_world);
@@ -328,9 +324,9 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
     //temporary world that contains two more lines, needed for the parallel case
     unsigned char* temp_world = (unsigned char *)malloc(size*(size+2)*sizeof(unsigned char));
-#pragma omp parallel{
+
     //let's fill the world
-    #pragma omp for
+    #pragma omp parallel for
     for(long i=0; i<size*(size+2); i++){
     
         if((i>= size) & (i<size*(size+1))){
@@ -344,7 +340,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
         }
     
     }
-#pragma omp master
+
     //auxiliary vectors for Scatterv
     unsigned int* displs = (unsigned int *)malloc(pSize*sizeof(unsigned int));  //starting index for each process
     unsigned int* scounts = (unsigned int *)malloc(pSize*sizeof(unsigned int)); //number of elements to assign to each process
@@ -384,7 +380,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
 
     MPI_Bcast(rcounts_g, pSize, MPI_INT,0, MPI_COMM_WORLD);
     MPI_Bcast(displs_g, pSize, MPI_INT, 0, MPI_COMM_WORLD);
-}
+
     
     // main call
     if(pSize > 1){
@@ -394,7 +390,7 @@ void run_static(char * filename, int times, int dump, int * argc, char ** argv[]
         grw_serial_static(world, size, dump, times);
     }
     
-}
+
     free(temp_world);
     free(world);
     double tend = CPU_TIME;

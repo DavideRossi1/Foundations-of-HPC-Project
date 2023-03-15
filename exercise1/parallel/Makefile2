@@ -5,7 +5,7 @@ OBJDIR=obj
 
 RW=$(OBJDIR)/read_write_pgm.o 
 INIT=$(OBJDIR)/w_init.o 
-IT_STATIC=$(OBJDIR)/grow_static.o
+IT_STATIC=$(OBJDIR)/grow_static2.o
 IT_ORDERED=$(OBJDIR)/grow_ordered.o
 OBJECTS= obj/main.o $(RW) $(INIT) $(IT_ORDERED) $(IT_STATIC)
 
@@ -20,4 +20,4 @@ obj/%.o: src/%.c
 clean:
 	rm -rf main.x
 	rm -rf obj/*.o
-	rm -rf snap/snapshot*
+	rm -rf snap/image*
